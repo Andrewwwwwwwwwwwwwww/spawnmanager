@@ -6,7 +6,7 @@
   "description": "Sets world spawn to an exact block and protects the surrounding area from block breaking and damage.",
   "authors": ["Andrewwwwwwwwwwwwwww"],
   "license": "MIT",
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {
     "main": ["io.github.andrewwwwwwwwwwwwwww.spawnmanager.SpawnManager"]
   },
@@ -18,7 +18,7 @@
   "icon": "assets/spawnmanager/icon.png",
   "depends": {
     "fabricloader": ">=0.19.2",
-    "fabric-api": "*",
+    "fabric-api": ">=0.148.2",
     "minecraft": "~26.1"
   }
 }
