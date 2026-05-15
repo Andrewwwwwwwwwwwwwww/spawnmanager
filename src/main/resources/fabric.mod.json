@@ -3,13 +3,19 @@
   "id": "spawnmanager",
   "version": "${version}",
   "name": "Spawn Manager",
-  "description": "Sets world spawn to an exact block and protects the surrounding area.",
+  "description": "Sets world spawn to an exact block and protects the surrounding area from block breaking and damage.",
   "authors": ["Andrewwwwwwwwwwwwwww"],
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.example.spawnmanager.SpawnManager"]
+    "main": ["io.github.andrewwwwwwwwwwwwwww.spawnmanager.SpawnManager"]
   },
+  "contact": {
+    "homepage": "https://github.com/Andrewwwwwwwwwwwwwww/spawnmanager",
+    "sources": "https://github.com/Andrewwwwwwwwwwwwwww/spawnmanager",
+    "issues": "https://github.com/Andrewwwwwwwwwwwwwww/spawnmanager/issues"
+  },
+  "icon": "assets/spawnmanager/icon.png",
   "depends": {
     "fabricloader": ">=0.19.2",
     "fabric-api": "*",

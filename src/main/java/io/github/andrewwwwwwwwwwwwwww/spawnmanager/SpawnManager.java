@@ -1,4 +1,4 @@
-package com.example.spawnmanager;
+package io.github.andrewwwwwwwwwwwwwww.spawnmanager;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ModInitializer;
@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class SpawnManager implements ModInitializer {
+    private static final int TICK_INTERVAL = 5;
     private final Set<UUID> playersInZone = new HashSet<>();
 
     private boolean isInZone(double x, double z, BlockPos spawnPos) {
@@ -104,6 +105,12 @@ public class SpawnManager implements ModInitializer {
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            ServerLevel overworld = server.overworld();
+            if (overworld == null || overworld.getGameTime() % TICK_INTERVAL != 0L) return;
+
+            LevelData.RespawnData overworldSpawn = overworld.getRespawnData();
+            BlockPos spawnPos = overworldSpawn != null ? overworldSpawn.pos() : null;
+
             for (ServerPlayer sp : server.getPlayerList().getPlayers()) {
                 ServerLevel level = (ServerLevel) sp.level();
 
@@ -114,10 +121,9 @@ public class SpawnManager implements ModInitializer {
                     continue;
                 }
 
-                LevelData.RespawnData respawnData = level.getRespawnData();
-                if (respawnData == null) continue;
+                if (spawnPos == null) continue;
 
-                boolean inZone = isInZone(sp.getX(), sp.getZ(), respawnData.pos());
+                boolean inZone = isInZone(sp.getX(), sp.getZ(), spawnPos);
                 boolean wasInZone = playersInZone.contains(sp.getUUID());
 
                 if (wasInZone && !inZone) {
