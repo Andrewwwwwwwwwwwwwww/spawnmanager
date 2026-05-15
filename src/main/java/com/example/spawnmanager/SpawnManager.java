@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -24,30 +25,26 @@ import java.util.Set;
 import java.util.UUID;
 
 public class SpawnManager implements ModInitializer {
-    private static final int PROTECTION_RADIUS = 32;
     private final Set<UUID> playersInZone = new HashSet<>();
 
     private boolean isInZone(double x, double z, BlockPos spawnPos) {
         double dx = x - spawnPos.getX();
         double dz = z - spawnPos.getZ();
-        return dx * dx + dz * dz <= (double) PROTECTION_RADIUS * PROTECTION_RADIUS;
+        return dx * dx + dz * dz <= (double) SpawnConfig.protectionRadius * SpawnConfig.protectionRadius;
     }
 
     @Override
     public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+        SpawnConfig.load();
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                 Commands.literal("setexactspawn")
                     .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                    .then(Commands.argument("x", IntegerArgumentType.integer())
-                    .then(Commands.argument("y", IntegerArgumentType.integer())
-                    .then(Commands.argument("z", IntegerArgumentType.integer())
+                    .then(Commands.argument("pos", BlockPosArgument.blockPos())
                         .executes(ctx -> {
                             CommandSourceStack source = ctx.getSource();
-                            int x = IntegerArgumentType.getInteger(ctx, "x");
-                            int y = IntegerArgumentType.getInteger(ctx, "y");
-                            int z = IntegerArgumentType.getInteger(ctx, "z");
-                            BlockPos pos = new BlockPos(x, y, z);
+                            BlockPos pos = BlockPosArgument.getBlockPos(ctx, "pos");
                             ServerLevel level = source.getLevel();
 
                             LevelData.RespawnData spawnData = LevelData.RespawnData.of(
@@ -58,11 +55,25 @@ public class SpawnManager implements ModInitializer {
                             level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, source.getServer());
 
                             source.sendSuccess(() -> Component.literal(
-                                "Exact spawn set to " + x + ", " + y + ", " + z), true);
+                                "Exact spawn set to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()), true);
                             return 1;
-                        }))))
-            )
-        );
+                        }))
+            );
+
+            dispatcher.register(
+                Commands.literal("setspawnradius")
+                    .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                    .then(Commands.argument("radius", IntegerArgumentType.integer(0))
+                        .executes(ctx -> {
+                            int radius = IntegerArgumentType.getInteger(ctx, "radius");
+                            SpawnConfig.protectionRadius = radius;
+                            SpawnConfig.save();
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                "Spawn protection radius set to " + radius), true);
+                            return 1;
+                        }))
+            );
+        });
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
             if (!(level instanceof ServerLevel serverLevel)) return true;
