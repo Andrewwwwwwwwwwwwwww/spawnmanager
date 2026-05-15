@@ -37,48 +37,45 @@ public class SpawnManager implements ModInitializer {
     public void onInitialize() {
         SpawnConfig.load();
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             dispatcher.register(
-                Commands.literal("setexactspawn")
+                Commands.literal("spawnmanager")
                     .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                    .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                        .executes(ctx -> {
-                            CommandSourceStack source = ctx.getSource();
-                            BlockPos pos = BlockPosArgument.getBlockPos(ctx, "pos");
-                            ServerLevel level = source.getLevel();
+                    .then(Commands.literal("setexactspawn")
+                        .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                            .executes(ctx -> {
+                                CommandSourceStack source = ctx.getSource();
+                                BlockPos pos = BlockPosArgument.getBlockPos(ctx, "pos");
+                                ServerLevel level = source.getLevel();
 
-                            if (!(level.getLevelData() instanceof WritableLevelData writableLevelData)) {
-                                source.sendFailure(Component.literal("Unable to set spawn: level data is not writable."));
-                                return 0;
-                            }
+                                if (!(level.getLevelData() instanceof WritableLevelData writableLevelData)) {
+                                    source.sendFailure(Component.literal("Unable to set spawn: level data is not writable."));
+                                    return 0;
+                                }
 
-                            LevelData.RespawnData spawnData = LevelData.RespawnData.of(
-                                level.dimension(), pos, 0.0f, 0.0f
-                            );
-                            writableLevelData.setSpawn(spawnData);
+                                LevelData.RespawnData spawnData = LevelData.RespawnData.of(
+                                    level.dimension(), pos, 0.0f, 0.0f
+                                );
+                                writableLevelData.setSpawn(spawnData);
 
-                            level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, source.getServer());
+                                level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, source.getServer());
 
-                            source.sendSuccess(() -> Component.literal(
-                                "Exact spawn set to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()), true);
-                            return 1;
-                        }))
-            );
-
-            dispatcher.register(
-                Commands.literal("setspawnradius")
-                    .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                    .then(Commands.argument("radius", IntegerArgumentType.integer(0))
-                        .executes(ctx -> {
-                            int radius = IntegerArgumentType.getInteger(ctx, "radius");
-                            SpawnConfig.protectionRadius = radius;
-                            SpawnConfig.save();
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                "Spawn protection radius set to " + radius), true);
-                            return 1;
-                        }))
-            );
-        });
+                                source.sendSuccess(() -> Component.literal(
+                                    "Exact spawn set to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()), true);
+                                return 1;
+                            })))
+                    .then(Commands.literal("setspawnradius")
+                        .then(Commands.argument("radius", IntegerArgumentType.integer(0))
+                            .executes(ctx -> {
+                                int radius = IntegerArgumentType.getInteger(ctx, "radius");
+                                SpawnConfig.protectionRadius = radius;
+                                SpawnConfig.save();
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Spawn protection radius set to " + radius), true);
+                                return 1;
+                            })))
+            )
+        );
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
             if (!(level instanceof ServerLevel serverLevel)) return true;
