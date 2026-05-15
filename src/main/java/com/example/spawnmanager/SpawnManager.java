@@ -47,10 +47,15 @@ public class SpawnManager implements ModInitializer {
                             BlockPos pos = BlockPosArgument.getBlockPos(ctx, "pos");
                             ServerLevel level = source.getLevel();
 
+                            if (!(level.getLevelData() instanceof WritableLevelData writableLevelData)) {
+                                source.sendFailure(Component.literal("Unable to set spawn: level data is not writable."));
+                                return 0;
+                            }
+
                             LevelData.RespawnData spawnData = LevelData.RespawnData.of(
                                 level.dimension(), pos, 0.0f, 0.0f
                             );
-                            ((WritableLevelData) level.getLevelData()).setSpawn(spawnData);
+                            writableLevelData.setSpawn(spawnData);
 
                             level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, source.getServer());
 

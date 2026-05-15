@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class SpawnConfig {
+    private static final com.google.gson.Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     static int protectionRadius = 32;
 
     static void load() {
@@ -33,7 +34,7 @@ public class SpawnConfig {
         json.addProperty("protectionRadius", protectionRadius);
         try {
             Files.createDirectories(configPath.getParent());
-            Files.writeString(configPath, new GsonBuilder().setPrettyPrinting().create().toJson(json));
+            Files.writeString(configPath, GSON.toJson(json));
         } catch (Exception e) {
             System.err.println("[SpawnManager] Failed to save config: " + e.getMessage());
         }
