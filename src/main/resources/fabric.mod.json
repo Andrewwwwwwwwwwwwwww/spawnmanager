@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "spawnmanager",
+  "version": "${version}",
+  "name": "Spawn Manager",
+  "description": "Sets world spawn to an exact block and protects the surrounding area.",
+  "authors": ["Andrewwwwwwwwwwwwwww"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.example.spawnmanager.SpawnManager"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.2",
+    "fabric-api": "*",
+    "minecraft": "~26.1"
+  }
+}
