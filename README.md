@@ -16,6 +16,7 @@ A Fabric mod for Minecraft that lets server admins set the world spawn to an exa
 
 | Command | Permission | Description |
 | --- | --- | --- |
+| `/spawn` | Anyone | Teleport to the exact spawn block (works for vanilla clients too). |
 | `/spawnmanager setexactspawn <pos>` | Op (2+) | Set the world spawn to an exact block. |
 | `/spawnmanager setspawnradius <radius>` | Op (2+) | Change the protection radius in blocks. |
 
