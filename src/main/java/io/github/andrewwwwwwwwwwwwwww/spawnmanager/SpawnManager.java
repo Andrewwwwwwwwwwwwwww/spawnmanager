@@ -38,7 +38,34 @@ public class SpawnManager implements ModInitializer {
     public void onInitialize() {
         SpawnConfig.load();
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(
+                Commands.literal("spawn")
+                    .executes(ctx -> {
+                        CommandSourceStack source = ctx.getSource();
+                        if (!(source.getEntity() instanceof ServerPlayer player)) {
+                            source.sendFailure(Component.literal("This command must be run by a player."));
+                            return 0;
+                        }
+                        ServerLevel overworld = source.getServer().overworld();
+                        LevelData.RespawnData respawnData = overworld.getRespawnData();
+                        if (respawnData == null) {
+                            source.sendFailure(Component.literal("World spawn is not set."));
+                            return 0;
+                        }
+                        BlockPos pos = respawnData.pos();
+                        player.teleportTo(overworld,
+                            pos.getX() + 0.5,
+                            pos.getY(),
+                            pos.getZ() + 0.5,
+                            player.getYRot(),
+                            player.getXRot());
+                        source.sendSuccess(() -> Component.literal("Teleported to spawn.")
+                            .withStyle(ChatFormatting.GREEN), false);
+                        return 1;
+                    })
+            );
+
             dispatcher.register(
                 Commands.literal("spawnmanager")
                     .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -75,8 +102,8 @@ public class SpawnManager implements ModInitializer {
                                     "Spawn protection radius set to " + radius), true);
                                 return 1;
                             })))
-            )
-        );
+            );
+        });
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
             if (!(level instanceof ServerLevel serverLevel)) return true;
