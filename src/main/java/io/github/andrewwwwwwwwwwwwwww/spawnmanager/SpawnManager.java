@@ -58,8 +58,10 @@ public class SpawnManager implements ModInitializer {
                             pos.getX() + 0.5,
                             pos.getY(),
                             pos.getZ() + 0.5,
+                            java.util.Set.of(),
                             player.getYRot(),
-                            player.getXRot());
+                            player.getXRot(),
+                            true);
                         source.sendSuccess(() -> Component.literal("Teleported to spawn.")
                             .withStyle(ChatFormatting.GREEN), false);
                         return 1;
