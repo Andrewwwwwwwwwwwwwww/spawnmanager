@@ -13,9 +13,9 @@ import java.nio.file.Path;
 public class SpawnConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("SpawnManager");
     private static final com.google.gson.Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    static int protectionRadius = 32;
+    public static int protectionRadius = 32;
 
-    static void load() {
+    public static void load() {
         Path configPath = configPath();
         if (Files.exists(configPath)) {
             try {
@@ -31,7 +31,7 @@ public class SpawnConfig {
         }
     }
 
-    static void save() {
+    public static void save() {
         Path configPath = configPath();
         JsonObject json = new JsonObject();
         json.addProperty("protectionRadius", protectionRadius);

@@ -16,7 +16,7 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     // Mod Menu (optional at runtime, compile-only)
-    modCompileOnly "com.terraformersmc:modmenu:+"
+    compileOnly "com.terraformersmc:modmenu:+"
 }
 
 processResources {
