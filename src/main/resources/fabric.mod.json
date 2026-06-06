@@ -3,7 +3,7 @@
   "id": "spawnmanager",
   "version": "${version}",
   "name": "Spawn Manager",
-  "description": "Server-side spawn protection and wilderness travel. Sets an exact world spawn with a circular protection zone (non-ops can't break blocks, open containers, take damage, or set off explosions inside it), plus a /wild random-teleport command and moderator-placeable wild-portal regions.",
+  "description": "Server-side spawn protection and wilderness travel. Sets an exact world spawn with a circular protection zone where non-ops can't break blocks, open containers, use redstone, take damage, or set off explosions, and where hostile mobs won't spawn. Adds a /wild random-teleport command and moderator-placeable wild-portal regions.",
   "authors": ["Andrewwwwwwwwwwwwwww"],
   "license": "All Rights Reserved",
   "environment": "*",
