@@ -4,8 +4,11 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
@@ -15,6 +18,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.storage.LevelData;
@@ -34,11 +45,42 @@ public class SpawnManager implements ModInitializer {
         return dx * dx + dz * dz <= (double) SpawnConfig.protectionRadius * SpawnConfig.protectionRadius;
     }
 
+    /** True when a non-op player is interacting inside the protected Overworld zone. Ops bypass. */
+    private boolean isProtectedFromContainerAccess(Player player, Level world, double x, double z) {
+        if (player instanceof ServerPlayer sp && Commands.LEVEL_GAMEMASTERS.check(sp.permissions())) return false;
+        return SpawnProtection.isProtected(world, x, z);
+    }
+
+    private void notifyContainerBlocked(Player player) {
+        player.sendSystemMessage(Component.literal("You cannot open containers near the spawn point.")
+            .withStyle(ChatFormatting.RED));
+    }
+
+    private void notifyRedstoneBlocked(Player player) {
+        player.sendSystemMessage(Component.literal("You cannot use redstone near the spawn point.")
+            .withStyle(ChatFormatting.RED));
+    }
+
+    /** Redstone components a player interacts with by right-clicking (levers, buttons, etc.). */
+    private static boolean isRedstoneInteractive(BlockState state) {
+        return state.is(BlockTags.BUTTONS)
+            || state.is(Blocks.LEVER)
+            || state.is(Blocks.REPEATER)
+            || state.is(Blocks.COMPARATOR)
+            || state.is(Blocks.DAYLIGHT_DETECTOR);
+    }
+
     @Override
     public void onInitialize() {
         SpawnConfig.load();
 
+        // /wild + physical wild portals
+        ServerLifecycleEvents.SERVER_STARTED.register(WildTravel::load);
+        ServerLifecycleEvents.SERVER_STOPPING.register(srv -> WildTravel.save());
+        ServerTickEvents.END_SERVER_TICK.register(WildTravel::tick);
+
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            WildTravel.register(dispatcher);
             dispatcher.register(
                 Commands.literal("spawn")
                     .executes(ctx -> {
@@ -104,6 +146,34 @@ public class SpawnManager implements ModInitializer {
                                     "Spawn protection radius set to " + radius), true);
                                 return 1;
                             })))
+                    .then(Commands.literal("status")
+                        .executes(ctx -> {
+                            CommandSourceStack source = ctx.getSource();
+                            ServerLevel overworld = source.getServer().overworld();
+                            LevelData.RespawnData rd = overworld.getRespawnData();
+                            int r = SpawnConfig.protectionRadius;
+                            if (rd == null) {
+                                source.sendSuccess(() -> Component.literal(
+                                    "No world spawn is set — container/block/damage protection is INACTIVE."), false);
+                                return 1;
+                            }
+                            BlockPos c = rd.pos();
+                            source.sendSuccess(() -> Component.literal(
+                                "Protected zone: centre " + c.getX() + ", " + c.getZ()
+                                    + "  |  radius " + r + " blocks  (Overworld only)")
+                                .withStyle(ChatFormatting.AQUA), false);
+                            if (source.getEntity() instanceof ServerPlayer p) {
+                                double dx = p.getX() - c.getX();
+                                double dz = p.getZ() - c.getZ();
+                                double dist = Math.sqrt(dx * dx + dz * dz);
+                                boolean inside = p.level().dimension().equals(Level.OVERWORLD) && dist <= r;
+                                source.sendSuccess(() -> Component.literal(String.format(
+                                    "You are %.1f blocks from centre — %s", dist,
+                                    inside ? "INSIDE the protected zone" : "outside the zone"))
+                                    .withStyle(inside ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
+                            }
+                            return 1;
+                        }))
             );
         });
 
@@ -120,6 +190,35 @@ public class SpawnManager implements ModInitializer {
                 return false;
             }
             return true;
+        });
+
+        // Block non-ops from opening container blocks (chests, barrels, hoppers, shulker
+        // boxes, furnaces, etc.) inside the protected zone.
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            BlockPos pos = hitResult.getBlockPos();
+            if (isProtectedFromContainerAccess(player, world, pos.getX(), pos.getZ())) {
+                BlockEntity blockEntity = world.getBlockEntity(pos);
+                if (blockEntity instanceof Container || blockEntity instanceof MenuProvider) {
+                    notifyContainerBlocked(player);
+                    return InteractionResult.FAIL;
+                }
+                if (isRedstoneInteractive(world.getBlockState(pos))) {
+                    notifyRedstoneBlocked(player);
+                    return InteractionResult.FAIL;
+                }
+            }
+            return InteractionResult.PASS;
+        });
+
+        // Block non-ops from opening chest-type entities (chest/hopper minecarts, chest
+        // boats) inside the protected zone.
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (entity instanceof Container
+                && isProtectedFromContainerAccess(player, world, entity.getX(), entity.getZ())) {
+                notifyContainerBlocked(player);
+                return InteractionResult.FAIL;
+            }
+            return InteractionResult.PASS;
         });
 
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {

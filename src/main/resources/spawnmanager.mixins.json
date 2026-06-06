@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "io.github.andrewwwwwwwwwwwwwww.spawnmanager.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "MobSpawnMixin",
+    "ServerExplosionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
