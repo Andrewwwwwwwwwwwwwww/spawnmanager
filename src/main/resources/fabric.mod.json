@@ -3,9 +3,9 @@
   "id": "spawnmanager",
   "version": "${version}",
   "name": "Spawn Manager",
-  "description": "Sets world spawn to an exact block and protects the surrounding area from block breaking and damage.",
+  "description": "Server-side spawn protection and wilderness travel. Sets an exact world spawn with a circular protection zone (non-ops can't break blocks, open containers, take damage, or set off explosions inside it), plus a /wild random-teleport command and moderator-placeable wild-portal regions.",
   "authors": ["Andrewwwwwwwwwwwwwww"],
-  "license": "MIT",
+  "license": "All Rights Reserved",
   "environment": "*",
   "entrypoints": {
     "main": ["io.github.andrewwwwwwwwwwwwwww.spawnmanager.SpawnManager"],
@@ -17,6 +17,9 @@
     "issues": "https://github.com/Andrewwwwwwwwwwwwwww/spawnmanager/issues"
   },
   "icon": "assets/spawnmanager/icon.png",
+  "mixins": [
+    "spawnmanager.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.19.2",
     "fabric-api": ">=0.148.2",

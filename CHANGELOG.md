@@ -1,5 +1,95 @@
 # Spawn Manager Changelog
 
+## [1.5.3] - 2026-06-06
+
+### Fixed
+- **CRITICAL: server crash on every explosion.** `ServerExplosion.explode()` returns `int`, but the
+  explosion mixin used `CallbackInfo` (void) with `cancellable=true`. That makes the mixin fail to
+  *apply* the first time the class loads (any TNT/creeper explosion) → server crash. Now uses
+  `CallbackInfoReturnable<Integer>` and returns 0 to cancel. (Explosion protection actually works now.)
+
+## [1.5.2] - 2026-06-05
+
+### Fixed
+- Mob-spawn blocking now checks the **spawn-check level parameter** instead of the mob's own
+  `level()` (which may not be assigned yet during the check) — should reliably stop mobs spawning
+  in the radius.
+- Explosion handler wrapped defensively (note: the real crash cause was the wrong callback type,
+  fixed in 1.5.3).
+
+## [1.5.1] - 2026-06-05
+
+### Added
+- **No redstone interaction inside the spawn radius** — non-op players can't use levers, buttons,
+  repeaters, comparators, or daylight detectors in the zone (ops bypass). Reuses the existing
+  block-use protection.
+
+## [1.5.0] - 2026-06-05
+
+### Added
+- **No mob spawning inside the spawn-protection radius** — natural, spawner, and chunk-generation
+  spawns are blocked in the zone (`MobSpawnMixin` on `Mob.checkSpawnRules`). Player-driven spawns
+  (spawn eggs, breeding, commands) still work, as they don't use the rules-based spawn check.
+
+## [1.4.2] - 2026-06-05
+
+### Changed
+- **`/wild` now has a per-player cooldown** (config `wildCooldownSeconds`, default **900 = 15 min**;
+  ops bypass). The cooldown only starts on a successful teleport.
+- **Wild portals have no cooldown** — stepping into a portal always teleports immediately (the
+  teleport moves you out of the region the same tick, so it won't loop).
+
+## [1.4.1] - 2026-06-05
+
+### Changed
+- **Wild portals are now adjustable-size regions.** `/wild place <size> [height]` stamps a
+  `size`×`size` footprint (1–64) of the given `height` (1–32, default 3) centred on you — so you
+  can make anything from a 1-block step to a big plaza. `/wild remove` removes the portal you're
+  standing in (or the nearest within 5 blocks); `/wild list` shows each region's centre and size.
+  Existing single-block portals are auto-upgraded to 1×3 regions on load.
+
+## [1.4.0] - 2026-06-05
+
+### Added
+- **`/wild`** (anyone) — teleports you to a random safe spot inside the Overworld world border.
+  Avoids lava, the void, and the spawn-protection zone; Overworld only (refuses in Nether/End).
+  Scatter distance is capped by the new `wildRadius` config (default 10000 blocks from border
+  centre; set 0 to use the full border).
+- **Wild portals** (moderators) — `/wild place` drops an invisible "wild portal" trigger at your
+  feet; any player who steps into it gets the same random teleport. Built for dropping into the
+  spawn build. Also `/wild remove` (nearest within 3 blocks) and `/wild list`. Portals persist in
+  `<world>/spawnmanager/wildportals.json`, with a 5-second per-player cooldown.
+
+## [1.3.1] - 2026-06-04
+
+### Added
+- `/spawnmanager status` — prints the protected zone's centre and radius, and (when run by a
+  player) how far you are from the centre and whether you're inside it. Useful for diagnosing
+  why a container/block is or isn't protected.
+
+### Changed
+- **All explosions disabled at spawn** — the `ServerExplosion` mixin now cancels *every*
+  explosion centred inside the protection radius, not just mob-caused ones. This covers TNT,
+  end crystals, beds/respawn anchors, etc., so decorations like end crystals are no longer
+  destroyed. Neither blocks nor entities take explosion damage in the zone.
+
+## [1.3.0] - 2026-06-02
+
+### Added
+- **Container protection** — non-op players can no longer open container blocks (chests,
+  barrels, hoppers, shulker boxes, furnaces, dispensers, etc.) or chest-type entities
+  (chest/hopper minecarts, chest boats) inside the spawn-protection radius. Ops bypass.
+- **Mob griefing protection** — explosions caused by mobs (creepers, ghast fireballs,
+  withers, etc.) are cancelled entirely when their centre is inside the protection radius,
+  so mob griefing can no longer alter the spawn build's appearance. Player- and TNT-driven
+  explosions are unaffected. Implemented via a `ServerExplosion` mixin.
+
+### Changed
+- Zone geometry extracted into a shared `SpawnProtection` helper so block breaking, player
+  damage immunity, container access, and the explosion mixin all use one definition.
+
+---
+
 ## [1.1.1] - 2026-05-15
 
 ### Changed
