@@ -1,30 +1,31 @@
 package io.github.andrewwwwwwwwwwwwwww.spawnmanager.mixin;
 
 import io.github.andrewwwwwwwwwwwwwww.spawnmanager.SpawnProtection;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.SpawnPlacements;
+import net.minecraft.world.level.ServerLevelAccessor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Stops mobs from spawning inside the spawn-protection radius. {@code checkSpawnRules} is the
- * rules-based spawn gate (natural, spawner, and chunk-generation spawns), so returning false there
- * keeps the protected area clear. Player-driven spawns (spawn eggs, breeding, commands) use other
- * spawn reasons that don't go through this check, so those still work.
+ * Stops mobs from spawning inside the spawn-protection radius. We hook the natural spawner's gate
+ * {@code SpawnPlacements.checkSpawnRules}, which receives the actual spawn {@link BlockPos} (unlike
+ * the per-mob {@code checkSpawnRules}, where the mob isn't positioned yet). Returning false rejects
+ * the spawn position. Player-driven spawns (eggs, breeding, commands) don't go through this gate.
  */
-@Mixin(Mob.class)
+@Mixin(SpawnPlacements.class)
 public class MobSpawnMixin {
 
     @Inject(method = "checkSpawnRules", at = @At("HEAD"), cancellable = true)
-    private void spawnmanager$noSpawnNearSpawn(LevelAccessor level, EntitySpawnReason reason,
-                                               CallbackInfoReturnable<Boolean> cir) {
-        Mob self = (Mob) (Object) this;
-        // Use the spawn-check level parameter (the mob's own level() may not be assigned yet).
-        if (level instanceof net.minecraft.world.level.Level lvl
-                && SpawnProtection.isProtected(lvl, self.getX(), self.getZ())) {
+    private static void spawnmanager$noSpawnNearSpawn(EntityType<?> type, ServerLevelAccessor level,
+                                                      EntitySpawnReason reason, BlockPos pos, RandomSource random,
+                                                      CallbackInfoReturnable<Boolean> cir) {
+        if (SpawnProtection.isProtected(level.getLevel(), pos.getX(), pos.getZ())) {
             cir.setReturnValue(false);
         }
     }

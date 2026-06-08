@@ -9,7 +9,9 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
   - Non-op players can't break blocks
   - Non-op players can't open containers (chests, barrels, hoppers, shulker boxes,
     furnaces, etc.) or chest-type entities (chest/hopper minecarts, chest boats)
+  - Non-op players can't use redstone (levers, buttons, repeaters, comparators, etc.)
   - Players take no damage
+  - **Hostile mobs won't spawn** inside the zone
   - **All explosions** are cancelled (TNT, creepers, ghasts, withers, end crystals,
     beds/respawn anchors) so nothing — mob or player — can damage the spawn build
   - Players are notified when they leave the protected area

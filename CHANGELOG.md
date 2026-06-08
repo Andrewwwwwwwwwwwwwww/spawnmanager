@@ -1,5 +1,13 @@
 # Spawn Manager Changelog
 
+## [1.5.4] - 2026-06-06
+
+### Fixed
+- **Mobs still spawning in the radius.** The previous hook (`Mob.checkSpawnRules`) ran before the mob
+  was positioned, so the location check was wrong. Now hooks the natural spawner's
+  `SpawnPlacements.checkSpawnRules`, which gets the actual spawn BlockPos — reliably blocks
+  natural/structure spawns in the zone.
+
 ## [1.5.3] - 2026-06-06
 
 ### Fixed
