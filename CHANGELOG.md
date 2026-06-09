@@ -1,5 +1,13 @@
 # Spawn Manager Changelog
 
+## [1.5.5] - 2026-06-06
+
+### Fixed
+- **Respawn now lands on the EXACT set spawn block.** Players without a bed/anchor were respawning
+  a block above the spawn (vanilla searches for the "nearest safe spot"). They're now teleported to
+  the precise `setexactspawn` position on death, matching `/spawn`. Players with a bed/anchor are
+  unaffected, and End-return respawns are left alone.
+
 ## [1.5.4] - 2026-06-06
 
 ### Fixed
