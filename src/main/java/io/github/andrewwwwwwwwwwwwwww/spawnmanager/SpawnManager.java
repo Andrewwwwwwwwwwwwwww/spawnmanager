@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -78,6 +79,21 @@ public class SpawnManager implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(WildTravel::load);
         ServerLifecycleEvents.SERVER_STOPPING.register(srv -> WildTravel.save());
         ServerTickEvents.END_SERVER_TICK.register(WildTravel::tick);
+
+        // Respawn players who have no bed/anchor at the EXACT set world spawn, overriding vanilla's
+        // "nearest safe spot" search (which can bump them a block up onto the floor above).
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (alive) return;                              // returning from the End, not a death
+            if (newPlayer.getRespawnConfig() != null) return; // has a personal spawn (bed/anchor) — leave it
+            var server = newPlayer.level().getServer();
+            if (server == null) return;
+            ServerLevel overworld = server.overworld();
+            LevelData.RespawnData rd = overworld.getRespawnData();
+            if (rd == null) return;
+            BlockPos pos = rd.pos();
+            newPlayer.teleportTo(overworld, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                java.util.Set.of(), newPlayer.getYRot(), newPlayer.getXRot(), true);
+        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             WildTravel.register(dispatcher);
