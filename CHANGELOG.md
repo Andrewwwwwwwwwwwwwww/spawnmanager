@@ -4,9 +4,9 @@
 
 ### Changed
 - **Updated to Minecraft 26.2.** Bumped `minecraft_version` to `26.2`, Fabric API to `0.152.1+26.2`,
-  Fabric Loader to `0.19.3`, and Fabric Loom to `1.17.11` (which required raising the Gradle wrapper
-  to `9.5.0`). `fabric.mod.json` now depends on `minecraft ~26.2`, `fabricloader >=0.19.3`, and
-  `fabric-api >=0.152.1`.
+  and Fabric Loader to `0.19.3`. Loom stays on `1.16.2` (builds 26.2 fine; 1.17.x would force a
+  Gradle 9.5 wrapper bump). `fabric.mod.json` now depends on `minecraft ~26.2`, `fabricloader
+  >=0.19.3`, and `fabric-api >=0.152.1`.
 - **Fixed the only 26.2 API break:** `Minecraft.setScreen(Screen)` was renamed to
   `setScreenAndShow(Screen)` — updated the four call sites in the Mod Menu config screen. The
   spawn-protection mixins (`SpawnPlacements.checkSpawnRules`, `ServerExplosion.explode()`) compiled
