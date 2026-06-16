@@ -45,7 +45,7 @@ public class SpawnManagerConfigScreen extends Screen {
 
             addRenderableWidget(Button.builder(
                 Component.literal("Back"),
-                btn -> this.minecraft.setScreen(parent)
+                btn -> this.minecraft.setScreenAndShow(parent)
             ).bounds(cx - 50, this.height - 30, 100, 20).build());
             return;
         }
@@ -66,18 +66,18 @@ public class SpawnManagerConfigScreen extends Screen {
                     SpawnConfig.protectionRadius = v;
                     SpawnConfig.save();
                 } catch (NumberFormatException ignored) {}
-                this.minecraft.setScreen(parent);
+                this.minecraft.setScreenAndShow(parent);
             }
         ).bounds(cx - 105, this.height - 30, 100, 20).build());
 
         addRenderableWidget(Button.builder(
             Component.literal("Cancel"),
-            btn -> this.minecraft.setScreen(parent)
+            btn -> this.minecraft.setScreenAndShow(parent)
         ).bounds(cx + 5, this.height - 30, 100, 20).build());
     }
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(parent);
+        this.minecraft.setScreenAndShow(parent);
     }
 }
