@@ -1,5 +1,17 @@
 # Spawn Manager Changelog
 
+## [1.6.0] - 2026-06-16
+
+### Changed
+- **Updated to Minecraft 26.2.** Bumped `minecraft_version` to `26.2`, Fabric API to `0.152.1+26.2`,
+  Fabric Loader to `0.19.3`, and Fabric Loom to `1.17.11` (which required raising the Gradle wrapper
+  to `9.5.0`). `fabric.mod.json` now depends on `minecraft ~26.2`, `fabricloader >=0.19.3`, and
+  `fabric-api >=0.152.1`.
+- **Fixed the only 26.2 API break:** `Minecraft.setScreen(Screen)` was renamed to
+  `setScreenAndShow(Screen)` — updated the four call sites in the Mod Menu config screen. The
+  spawn-protection mixins (`SpawnPlacements.checkSpawnRules`, `ServerExplosion.explode()`) compiled
+  unchanged against 26.2.
+
 ## [1.5.5] - 2026-06-06
 
 ### Fixed
