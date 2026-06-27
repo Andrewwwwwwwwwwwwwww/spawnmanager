@@ -1,5 +1,15 @@
 # Spawn Manager Changelog
 
+## [2.0.0] - 2026-06-27
+
+### Changed
+- **Stable 2.0.0 release.** No gameplay changes from 1.6.0 — this marks the mod stable and aligns it with
+  the unified release across the mod suite.
+- **Jar filenames now include the Minecraft version** (e.g. `spawnmanager-2.0.0+mc26.2.jar`) so the 26.2
+  and 26.1.2 downloads are unambiguous.
+- A parallel **MC 26.1.2** build is now published (`spawnmanager-2.0.0+mc26.1.2.jar`) for players still on
+  the older version.
+
 ## [1.6.0] - 2026-06-16
 
 ### Changed
