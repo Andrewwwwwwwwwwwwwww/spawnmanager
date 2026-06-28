@@ -66,16 +66,20 @@ public final class WildTravel {
     /** /wild command cooldown only (gametick when each player may use it again). Portals are exempt. */
     private static final Map<UUID, Long> commandCooldown = new HashMap<>();
     private static Path savePath = null;
+    /** Per-world toggle for ALL wild travel (the /wild command AND wild portals). Persisted in wildportals.json. */
+    private static boolean wildEnabled = true;
 
     // ---- lifecycle ----
 
     public static void load(MinecraftServer server) {
         portals.clear();
         commandCooldown.clear();
+        wildEnabled = true;
         savePath = server.getWorldPath(LevelResource.ROOT).resolve("spawnmanager").resolve("wildportals.json");
         if (!Files.exists(savePath)) return;
         try {
             JsonObject json = JsonParser.parseString(Files.readString(savePath)).getAsJsonObject();
+            if (json.has("wildEnabled")) wildEnabled = json.get("wildEnabled").getAsBoolean();
             if (json.has("portals")) {
                 for (JsonElement e : json.getAsJsonArray("portals")) {
                     JsonObject o = e.getAsJsonObject();
@@ -97,6 +101,7 @@ public final class WildTravel {
         if (savePath == null) return;
         try {
             JsonObject json = new JsonObject();
+            json.addProperty("wildEnabled", wildEnabled);
             JsonArray arr = new JsonArray();
             for (WildPortal p : portals) {
                 JsonObject o = new JsonObject();
@@ -115,7 +120,7 @@ public final class WildTravel {
     // ---- per-tick portal detection ----
 
     public static void tick(MinecraftServer server) {
-        if (portals.isEmpty()) return;
+        if (!wildEnabled || portals.isEmpty()) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!(player.level() instanceof ServerLevel level)) continue;
             if (!level.dimension().equals(Level.OVERWORLD)) continue;
@@ -190,13 +195,33 @@ public final class WildTravel {
                 .then(Commands.literal("list")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(ctx -> listPortals(ctx.getSource())))
+                .then(Commands.literal("enable")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(ctx -> setEnabled(ctx.getSource(), true)))
+                .then(Commands.literal("disable")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(ctx -> setEnabled(ctx.getSource(), false)))
         );
+    }
+
+    /** Op toggle: enable/disable wild travel on this world (command + portals) and persist it. */
+    private static int setEnabled(CommandSourceStack source, boolean enabled) {
+        wildEnabled = enabled;
+        save();
+        source.sendSuccess(() -> Component.literal(
+                "Wild travel " + (enabled ? "enabled" : "disabled") + " on this world.")
+                .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
     }
 
     /** /wild from the command: enforce the per-player cooldown (ops bypass), then teleport. */
     private static int runWildCommand(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer p)) {
             source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        if (!wildEnabled) {
+            p.sendSystemMessage(Component.literal("Wild travel is disabled on this world.").withStyle(ChatFormatting.RED));
             return 0;
         }
         boolean op = Commands.LEVEL_GAMEMASTERS.check(p.permissions());

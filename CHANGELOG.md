@@ -1,5 +1,14 @@
 # Spawn Manager Changelog
 
+## [2.1.0] - 2026-06-28
+
+### Added
+- **Wild travel can now be turned off per-world.** New op commands `/wild enable` and
+  `/wild disable` toggle all wild travel for the current world. While disabled, both the `/wild`
+  command and the wild-portal step-trigger do nothing (so portals can't be used as a backdoor).
+  The state is stored per-world in `<world>/spawnmanager/wildportals.json` (`"wildEnabled"`, default
+  `true`) and persists across restarts — different worlds keep their own setting.
+
 ## [2.0.0] - 2026-06-27
 
 ### Changed

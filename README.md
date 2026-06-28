@@ -20,6 +20,9 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
   ops bypass) and a max scatter distance are configurable.
 - **Wild portals** — moderators can `/wild place <size> [height]` to stamp an adjustable-size
   region that teleports any player who steps into it (no cooldown) — drop one into the spawn build.
+- **Per-world on/off switch** — `/wild enable` / `/wild disable` (op) turn all wild travel off for
+  the current world. While disabled, both the `/wild` command and wild portals do nothing. The
+  setting is saved per-world (so different worlds keep their own) and persists across restarts.
 - **Overworld only** — protection and wild travel are restricted to the Overworld; Nether/End are untouched.
 - **Persistent** — config saved to `config/spawnmanager.json`; wild portals to `<world>/spawnmanager/wildportals.json`.
 
@@ -35,6 +38,8 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
 | `/wild place <size> [height]` | Op (2+) | Place an adjustable wild-portal region at your feet. |
 | `/wild remove` | Op (2+) | Remove the wild portal you're standing in (or nearest within 5 blocks). |
 | `/wild list` | Op (2+) | List all wild portals. |
+| `/wild enable` | Op (2+) | Enable wild travel (command + portals) on this world. |
+| `/wild disable` | Op (2+) | Disable wild travel (command + portals) on this world. |
 
 ## Config (`config/spawnmanager.json`)
 
