@@ -18,6 +18,10 @@ public class SpawnConfig {
     public static int wildRadius = 10000;
     /** Cooldown (seconds) between uses of the /wild command per player. Portals are exempt. Ops bypass. */
     public static int wildCooldownSeconds = 900; // 15 minutes
+    /** Whether wild travel (the /wild command AND wild portals) is enabled. */
+    public static boolean wildEnabled = true;
+    /** Whether the /spawn command is enabled. */
+    public static boolean spawnEnabled = true;
 
     public static void load() {
         Path configPath = configPath();
@@ -33,6 +37,12 @@ public class SpawnConfig {
                 if (json.has("wildCooldownSeconds")) {
                     wildCooldownSeconds = json.get("wildCooldownSeconds").getAsInt();
                 }
+                if (json.has("wildEnabled")) {
+                    wildEnabled = json.get("wildEnabled").getAsBoolean();
+                }
+                if (json.has("spawnEnabled")) {
+                    spawnEnabled = json.get("spawnEnabled").getAsBoolean();
+                }
             } catch (Exception e) {
                 LOGGER.error("Failed to load config", e);
             }
@@ -47,6 +57,8 @@ public class SpawnConfig {
         json.addProperty("protectionRadius", protectionRadius);
         json.addProperty("wildRadius", wildRadius);
         json.addProperty("wildCooldownSeconds", wildCooldownSeconds);
+        json.addProperty("wildEnabled", wildEnabled);
+        json.addProperty("spawnEnabled", spawnEnabled);
         try {
             Files.createDirectories(configPath.getParent());
             Files.writeString(configPath, GSON.toJson(json));
