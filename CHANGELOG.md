@@ -1,13 +1,27 @@
 # Spawn Manager Changelog
 
-## [2.1.0] - 2026-06-28
+## [2.2.0] - 2026-06-28
 
 ### Added
-- **Wild travel can now be turned off per-world.** New op commands `/wild enable` and
-  `/wild disable` toggle all wild travel for the current world. While disabled, both the `/wild`
-  command and the wild-portal step-trigger do nothing (so portals can't be used as a backdoor).
-  The state is stored per-world in `<world>/spawnmanager/wildportals.json` (`"wildEnabled"`, default
-  `true`) and persists across restarts — different worlds keep their own setting.
+- **Everything is now configurable, with full Mod Menu support.**
+  - New op commands: `/spawn enable` / `/spawn disable` (toggle the `/spawn` command),
+    `/spawnmanager setwildradius <radius>`, and `/spawnmanager setwildcooldown <seconds>`. Combined
+    with the existing `setexactspawn`, `setspawnradius`, and `/wild enable|disable`, every setting now
+    has a command.
+  - The **Mod Menu** config screen now edits all settings in singleplayer (protection radius, wild
+    radius, wild cooldown, and on/off toggles for wild travel and `/spawn`). On a multiplayer server
+    it points you at `config/spawnmanager.json` and the op commands, since a client can't change a
+    server's config.
+  - `/spawnmanager status` now also reports the wild/​spawn toggles, wild radius, and cooldown.
+- **Wild portals are now full 3D.** `/wild place <width> [height] [depth]` lets you size each axis
+  independently. Backwards-compatible: `/wild place 5` → 5×3×5, `/wild place 5 5` → 5×5×5, and the new
+  third argument `/wild place 5 5 7` → 5×5×7 (X×Y×Z).
+
+### Changed
+- **The `/wild` on/off toggle is now a server-wide config value** (`wildEnabled` in
+  `config/spawnmanager.json`), plus a new `spawnEnabled` for `/spawn`. This moves it out of the
+  per-world `wildportals.json` used in 2.1.0 so it can be edited from Mod Menu / the config file. For a
+  single-world server the behaviour is unchanged; multi-world per-save granularity is no longer kept.
 
 ## [2.0.0] - 2026-06-27
 

@@ -18,11 +18,15 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
 - **Wilderness travel** — `/wild` scatters a player to a random safe spot inside the Overworld
   world border (avoids lava, the void, and the spawn zone). Per-player cooldown (default 15 min,
   ops bypass) and a max scatter distance are configurable.
-- **Wild portals** — moderators can `/wild place <size> [height]` to stamp an adjustable-size
+- **Wild portals** — moderators can `/wild place <width> [height] [depth]` to stamp a fully 3D
   region that teleports any player who steps into it (no cooldown) — drop one into the spawn build.
-- **Per-world on/off switch** — `/wild enable` / `/wild disable` (op) turn all wild travel off for
-  the current world. While disabled, both the `/wild` command and wild portals do nothing. The
-  setting is saved per-world (so different worlds keep their own) and persists across restarts.
+  Each axis is independent: `/wild place 5` → 5×3×5, `/wild place 5 5` → 5×5×5, `/wild place 5 5 7` → 5×5×7.
+- **On/off switches** — `/wild enable|disable` and `/spawn enable|disable` (op) turn wild travel
+  (command + portals) or the `/spawn` command on and off. While wild travel is disabled, neither the
+  `/wild` command nor wild portals do anything.
+- **Fully configurable** — every setting has an op command, and the **Mod Menu** screen edits them all
+  in singleplayer (on a server it points you at the config file + commands, since a client can't change
+  a server's config).
 - **Overworld only** — protection and wild travel are restricted to the Overworld; Nether/End are untouched.
 - **Persistent** — config saved to `config/spawnmanager.json`; wild portals to `<world>/spawnmanager/wildportals.json`.
 
@@ -34,12 +38,14 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
 | `/wild` | Anyone | Teleport to a random safe spot in the Overworld (per-player cooldown). |
 | `/spawnmanager setexactspawn <pos>` | Op (2+) | Set the world spawn to an exact block. |
 | `/spawnmanager setspawnradius <radius>` | Op (2+) | Change the protection radius in blocks. |
-| `/spawnmanager status` | Op (2+) | Show the protected zone's centre, radius, and your position. |
-| `/wild place <size> [height]` | Op (2+) | Place an adjustable wild-portal region at your feet. |
+| `/spawnmanager setwildradius <radius>` | Op (2+) | Change the max `/wild` scatter distance (0 = full border). |
+| `/spawnmanager setwildcooldown <seconds>` | Op (2+) | Change the `/wild` per-player cooldown (0 = none). |
+| `/spawnmanager status` | Op (2+) | Show the protected zone, the wild/spawn toggles, and your position. |
+| `/wild place <width> [height] [depth]` | Op (2+) | Place a 3D wild-portal region at your feet. |
 | `/wild remove` | Op (2+) | Remove the wild portal you're standing in (or nearest within 5 blocks). |
 | `/wild list` | Op (2+) | List all wild portals. |
-| `/wild enable` | Op (2+) | Enable wild travel (command + portals) on this world. |
-| `/wild disable` | Op (2+) | Disable wild travel (command + portals) on this world. |
+| `/wild enable` / `/wild disable` | Op (2+) | Turn wild travel (command + portals) on/off. |
+| `/spawn enable` / `/spawn disable` | Op (2+) | Turn the `/spawn` command on/off. |
 
 ## Config (`config/spawnmanager.json`)
 
@@ -48,6 +54,10 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
 | `protectionRadius` | 32 | Spawn-protection radius in blocks. |
 | `wildRadius` | 10000 | Max `/wild` distance from the world-border centre (0 = full border). |
 | `wildCooldownSeconds` | 900 | `/wild` cooldown per player (ops bypass). |
+| `wildEnabled` | true | Master switch for wild travel (the `/wild` command and wild portals). |
+| `spawnEnabled` | true | Whether the `/spawn` command is usable. |
+
+In singleplayer these can all be edited through **Mod Menu** instead of the JSON file.
 
 ## Installation
 

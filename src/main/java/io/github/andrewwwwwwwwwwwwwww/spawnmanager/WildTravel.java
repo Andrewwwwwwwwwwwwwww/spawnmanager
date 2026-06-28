@@ -66,20 +66,16 @@ public final class WildTravel {
     /** /wild command cooldown only (gametick when each player may use it again). Portals are exempt. */
     private static final Map<UUID, Long> commandCooldown = new HashMap<>();
     private static Path savePath = null;
-    /** Per-world toggle for ALL wild travel (the /wild command AND wild portals). Persisted in wildportals.json. */
-    private static boolean wildEnabled = true;
 
     // ---- lifecycle ----
 
     public static void load(MinecraftServer server) {
         portals.clear();
         commandCooldown.clear();
-        wildEnabled = true;
         savePath = server.getWorldPath(LevelResource.ROOT).resolve("spawnmanager").resolve("wildportals.json");
         if (!Files.exists(savePath)) return;
         try {
             JsonObject json = JsonParser.parseString(Files.readString(savePath)).getAsJsonObject();
-            if (json.has("wildEnabled")) wildEnabled = json.get("wildEnabled").getAsBoolean();
             if (json.has("portals")) {
                 for (JsonElement e : json.getAsJsonArray("portals")) {
                     JsonObject o = e.getAsJsonObject();
@@ -101,7 +97,6 @@ public final class WildTravel {
         if (savePath == null) return;
         try {
             JsonObject json = new JsonObject();
-            json.addProperty("wildEnabled", wildEnabled);
             JsonArray arr = new JsonArray();
             for (WildPortal p : portals) {
                 JsonObject o = new JsonObject();
@@ -120,7 +115,7 @@ public final class WildTravel {
     // ---- per-tick portal detection ----
 
     public static void tick(MinecraftServer server) {
-        if (!wildEnabled || portals.isEmpty()) return;
+        if (!SpawnConfig.wildEnabled || portals.isEmpty()) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!(player.level() instanceof ServerLevel level)) continue;
             if (!level.dimension().equals(Level.OVERWORLD)) continue;
@@ -182,13 +177,25 @@ public final class WildTravel {
                 .executes(ctx -> runWildCommand(ctx.getSource()))
                 .then(Commands.literal("place")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                        .executes(ctx -> placePortal(ctx.getSource(), DEFAULT_SIZE, DEFAULT_HEIGHT))
-                        .then(Commands.argument("size", IntegerArgumentType.integer(1, 64))
-                                .executes(ctx -> placePortal(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "size"), DEFAULT_HEIGHT))
+                        .executes(ctx -> placePortal(ctx.getSource(), DEFAULT_SIZE, DEFAULT_HEIGHT, DEFAULT_SIZE))
+                        .then(Commands.argument("width", IntegerArgumentType.integer(1, 64))
+                                // one arg: square footprint (width x width), default height
+                                .executes(ctx -> {
+                                    int w = IntegerArgumentType.getInteger(ctx, "width");
+                                    return placePortal(ctx.getSource(), w, DEFAULT_HEIGHT, w);
+                                })
                                 .then(Commands.argument("height", IntegerArgumentType.integer(1, 32))
-                                        .executes(ctx -> placePortal(ctx.getSource(),
-                                                IntegerArgumentType.getInteger(ctx, "size"),
-                                                IntegerArgumentType.getInteger(ctx, "height"))))))
+                                        // two args: square footprint (width x width) x height
+                                        .executes(ctx -> {
+                                            int w = IntegerArgumentType.getInteger(ctx, "width");
+                                            return placePortal(ctx.getSource(), w, IntegerArgumentType.getInteger(ctx, "height"), w);
+                                        })
+                                        .then(Commands.argument("depth", IntegerArgumentType.integer(1, 64))
+                                                // three args: full width (X) x height (Y) x depth (Z) control
+                                                .executes(ctx -> placePortal(ctx.getSource(),
+                                                        IntegerArgumentType.getInteger(ctx, "width"),
+                                                        IntegerArgumentType.getInteger(ctx, "height"),
+                                                        IntegerArgumentType.getInteger(ctx, "depth")))))))
                 .then(Commands.literal("remove")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(ctx -> removePortal(ctx.getSource())))
@@ -204,12 +211,12 @@ public final class WildTravel {
         );
     }
 
-    /** Op toggle: enable/disable wild travel on this world (command + portals) and persist it. */
+    /** Op toggle: enable/disable wild travel (command + portals) in the server config and persist it. */
     private static int setEnabled(CommandSourceStack source, boolean enabled) {
-        wildEnabled = enabled;
-        save();
+        SpawnConfig.wildEnabled = enabled;
+        SpawnConfig.save();
         source.sendSuccess(() -> Component.literal(
-                "Wild travel " + (enabled ? "enabled" : "disabled") + " on this world.")
+                "Wild travel " + (enabled ? "enabled" : "disabled") + ".")
                 .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
     }
@@ -220,8 +227,8 @@ public final class WildTravel {
             source.sendFailure(Component.literal("This command must be run by a player."));
             return 0;
         }
-        if (!wildEnabled) {
-            p.sendSystemMessage(Component.literal("Wild travel is disabled on this world.").withStyle(ChatFormatting.RED));
+        if (!SpawnConfig.wildEnabled) {
+            p.sendSystemMessage(Component.literal("Wild travel is disabled.").withStyle(ChatFormatting.RED));
             return 0;
         }
         boolean op = Commands.LEVEL_GAMEMASTERS.check(p.permissions());
@@ -252,7 +259,7 @@ public final class WildTravel {
         return m > 0 ? (m + "m " + s + "s") : (s + "s");
     }
 
-    private static int placePortal(CommandSourceStack source, int size, int height) {
+    private static int placePortal(CommandSourceStack source, int width, int height, int depth) {
         if (!(source.getEntity() instanceof ServerPlayer p)) {
             source.sendFailure(Component.literal("This command must be run by a player."));
             return 0;
@@ -262,10 +269,11 @@ public final class WildTravel {
             return 0;
         }
         BlockPos f = p.blockPosition();
-        int halfLow = (size - 1) / 2;       // centre the footprint on the player
-        int minX = f.getX() - halfLow, maxX = minX + size - 1;
-        int minZ = f.getZ() - halfLow, maxZ = minZ + size - 1;
-        int minY = f.getY(), maxY = f.getY() + height - 1;
+        int halfW = (width - 1) / 2;        // centre the footprint on the player
+        int halfD = (depth - 1) / 2;
+        int minX = f.getX() - halfW, maxX = minX + width - 1;   // X = width
+        int minZ = f.getZ() - halfD, maxZ = minZ + depth - 1;   // Z = depth
+        int minY = f.getY(), maxY = f.getY() + height - 1;      // Y = height
         WildPortal portal = new WildPortal(minX, minY, minZ, maxX, maxY, maxZ);
         portals.add(portal);
         save();

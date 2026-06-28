@@ -71,6 +71,16 @@ public class SpawnManager implements ModInitializer {
             || state.is(Blocks.DAYLIGHT_DETECTOR);
     }
 
+    /** Op toggle: enable/disable the /spawn command in the server config and persist it. */
+    private static int setSpawnEnabled(CommandSourceStack source, boolean enabled) {
+        SpawnConfig.spawnEnabled = enabled;
+        SpawnConfig.save();
+        source.sendSuccess(() -> Component.literal(
+                "The /spawn command is now " + (enabled ? "enabled" : "disabled") + ".")
+                .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
+    }
+
     @Override
     public void onInitialize() {
         SpawnConfig.load();
@@ -105,6 +115,10 @@ public class SpawnManager implements ModInitializer {
                             source.sendFailure(Component.literal("This command must be run by a player."));
                             return 0;
                         }
+                        if (!SpawnConfig.spawnEnabled) {
+                            source.sendFailure(Component.literal("The /spawn command is disabled."));
+                            return 0;
+                        }
                         ServerLevel overworld = source.getServer().overworld();
                         LevelData.RespawnData respawnData = overworld.getRespawnData();
                         if (respawnData == null) {
@@ -124,6 +138,12 @@ public class SpawnManager implements ModInitializer {
                             .withStyle(ChatFormatting.GREEN), false);
                         return 1;
                     })
+                    .then(Commands.literal("enable")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(ctx -> setSpawnEnabled(ctx.getSource(), true)))
+                    .then(Commands.literal("disable")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(ctx -> setSpawnEnabled(ctx.getSource(), false)))
             );
 
             dispatcher.register(
@@ -162,12 +182,38 @@ public class SpawnManager implements ModInitializer {
                                     "Spawn protection radius set to " + radius), true);
                                 return 1;
                             })))
+                    .then(Commands.literal("setwildradius")
+                        .then(Commands.argument("radius", IntegerArgumentType.integer(0))
+                            .executes(ctx -> {
+                                int radius = IntegerArgumentType.getInteger(ctx, "radius");
+                                SpawnConfig.wildRadius = radius;
+                                SpawnConfig.save();
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Wild radius set to " + radius + (radius == 0 ? " (full world border)" : " blocks")), true);
+                                return 1;
+                            })))
+                    .then(Commands.literal("setwildcooldown")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(ctx -> {
+                                int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
+                                SpawnConfig.wildCooldownSeconds = seconds;
+                                SpawnConfig.save();
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Wild cooldown set to " + seconds + " seconds" + (seconds == 0 ? " (no cooldown)" : "")), true);
+                                return 1;
+                            })))
                     .then(Commands.literal("status")
                         .executes(ctx -> {
                             CommandSourceStack source = ctx.getSource();
                             ServerLevel overworld = source.getServer().overworld();
                             LevelData.RespawnData rd = overworld.getRespawnData();
                             int r = SpawnConfig.protectionRadius;
+                            source.sendSuccess(() -> Component.literal(
+                                "Wild travel: " + (SpawnConfig.wildEnabled ? "ON" : "OFF")
+                                    + "  |  /spawn: " + (SpawnConfig.spawnEnabled ? "ON" : "OFF")
+                                    + "  |  wild radius " + SpawnConfig.wildRadius
+                                    + ", cooldown " + SpawnConfig.wildCooldownSeconds + "s")
+                                .withStyle(ChatFormatting.GRAY), false);
                             if (rd == null) {
                                 source.sendSuccess(() -> Component.literal(
                                     "No world spawn is set — container/block/damage protection is INACTIVE."), false);
