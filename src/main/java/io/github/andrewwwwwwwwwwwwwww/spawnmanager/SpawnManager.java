@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -23,6 +24,9 @@ import net.minecraft.world.Container;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.decoration.painting.Painting;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -59,6 +63,11 @@ public class SpawnManager implements ModInitializer {
 
     private void notifyRedstoneBlocked(Player player) {
         player.sendSystemMessage(Component.literal("You cannot use redstone near the spawn point.")
+            .withStyle(ChatFormatting.RED));
+    }
+
+    private void notifyDecorationBlocked(Player player) {
+        player.sendSystemMessage(Component.literal("You cannot alter decorations near the spawn point.")
             .withStyle(ChatFormatting.RED));
     }
 
@@ -272,9 +281,15 @@ public class SpawnManager implements ModInitializer {
             return InteractionResult.PASS;
         });
 
-        // Block non-ops from opening chest-type entities (chest/hopper minecarts, chest
-        // boats) inside the protected zone.
+        // Block non-ops from opening chest-type entities (chest/hopper minecarts, chest boats)
+        // and from taking/swapping/rotating spawn-build decorations (armor stands, item frames
+        // incl. glow frames) inside the protected zone.
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if ((entity instanceof ArmorStand || entity instanceof ItemFrame)
+                && isProtectedFromContainerAccess(player, world, entity.getX(), entity.getZ())) {
+                notifyDecorationBlocked(player);
+                return InteractionResult.FAIL;
+            }
             if (entity instanceof Container
                 && isProtectedFromContainerAccess(player, world, entity.getX(), entity.getZ())) {
                 notifyContainerBlocked(player);
@@ -283,7 +298,27 @@ public class SpawnManager implements ModInitializer {
             return InteractionResult.PASS;
         });
 
+        // Block non-ops from melee-breaking spawn-build decorations (a broken armor stand drops
+        // its worn gear; item frames drop their item; paintings drop themselves) inside the zone.
+        // AttackEntityCallback is the left-click sibling of UseEntityCallback.
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if ((entity instanceof ArmorStand || entity instanceof ItemFrame || entity instanceof Painting)
+                && isProtectedFromContainerAccess(player, world, entity.getX(), entity.getZ())) {
+                notifyDecorationBlocked(player);
+                return InteractionResult.FAIL;
+            }
+            return InteractionResult.PASS;
+        });
+
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            // Spawn-build armor stands are protected from ALL damage in-zone — this stops
+            // projectile breaks (arrow/trident/etc.) that never fire AttackEntityCallback and
+            // would otherwise drop the worn armor. Ops bypass via the damage's owning entity.
+            if (entity instanceof ArmorStand) {
+                if (source.getEntity() instanceof ServerPlayer op
+                    && Commands.LEVEL_GAMEMASTERS.check(op.permissions())) return true;
+                return !SpawnProtection.isProtected(entity.level(), entity.getX(), entity.getZ());
+            }
             if (!(entity instanceof ServerPlayer sp)) return true;
             ServerLevel level = (ServerLevel) sp.level();
             if (!level.dimension().equals(Level.OVERWORLD)) return true;

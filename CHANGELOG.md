@@ -1,5 +1,21 @@
 # Spawn Manager Changelog
 
+## [2.3.0] - 2026-07-04
+
+### Fixed
+- **Spawn-build decorations are now protected.** Non-op players could take armor off armor stands,
+  and take/rotate items in item frames, inside the protection zone — armor stands, item frames, and
+  paintings are entities, not containers, so the existing entity protection (which only covered
+  chest-type `Container` entities) passed right over them. Now, inside the zone, non-ops can't:
+  - right-click an armor stand to take/swap its equipment, or an item frame to take/rotate its item;
+  - melee-attack armor stands, item frames, or paintings to break them (a broken armor stand drops
+    its worn gear);
+  - destroy armor stands, item frames, or paintings with projectiles (arrows/tridents/etc.) or other
+    non-explosion damage.
+  Ops bypass all of it. Implemented via `UseEntityCallback` + a new `AttackEntityCallback`, an
+  armor-stand branch in the damage-immunity handler, and a new `BlockAttachedEntityMixin` (targeting
+  both `BlockAttachedEntity` and `ItemFrame#hurtServer`) for the item-frame/painting projectile path.
+
 ## [2.2.0] - 2026-06-28
 
 ### Added

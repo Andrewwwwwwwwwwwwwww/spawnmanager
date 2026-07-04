@@ -9,6 +9,8 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
   - Non-op players can't break blocks
   - Non-op players can't open containers (chests, barrels, hoppers, shulker boxes,
     furnaces, etc.) or chest-type entities (chest/hopper minecarts, chest boats)
+  - Non-op players can't take/swap armor on armor stands, take/rotate items in item
+    frames, or break armor stands, item frames, or paintings (by hand or projectile)
   - Non-op players can't use redstone (levers, buttons, repeaters, comparators, etc.)
   - Players take no damage
   - **Hostile mobs won't spawn** inside the zone
