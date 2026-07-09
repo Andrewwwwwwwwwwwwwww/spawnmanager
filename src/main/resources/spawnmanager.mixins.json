@@ -5,7 +5,8 @@
   "mixins": [
     "BlockAttachedEntityMixin",
     "MobSpawnMixin",
-    "ServerExplosionMixin"
+    "ServerExplosionMixin",
+    "ServerPlayerSpawnMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -4,7 +4,7 @@ A server-side Fabric mod that sets the world spawn to an exact block, protects t
 
 ## Features
 
-- **Exact spawn point** — `/spawnmanager setexactspawn <pos>` sets the world spawn to a precise block. Tab-completion supports relative coordinates (`~ ~ ~`) just like `/fill`.
+- **Exact spawn point** — `/spawnmanager setexactspawn <pos>` sets the world spawn to a precise block. Tab-completion supports relative coordinates (`~ ~ ~`) just like `/fill`. New players and bed-less respawns land exactly on that block, not on vanilla's "nearest safe spot" above it.
 - **Spawn protection** — A configurable circular zone around spawn (default 32 blocks) where:
   - Non-op players can't break blocks
   - Non-op players can't open containers (chests, barrels, hoppers, shulker boxes,

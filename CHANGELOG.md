@@ -1,5 +1,16 @@
 # Spawn Manager Changelog
 
+## [2.3.1] - 2026-07-04
+
+### Fixed
+- **New players now spawn on the exact set spawn block.** First-time players were landing many
+  blocks above the set spawn: the mod only forced the exact spawn on death-respawn, while a brand-new
+  player's initial placement still went through vanilla's upward "nearest safe spot" search. A new
+  `ServerPlayerSpawnMixin` overrides `ServerPlayer.adjustSpawnLocation` (the new-player placement
+  method, only called from `PlayerList.placeNewPlayer`) to return the exact `setexactspawn` position,
+  matching `/spawn` and the death-respawn behavior. Returning players are unaffected (they load their
+  saved position).
+
 ## [2.3.0] - 2026-07-04
 
 ### Fixed
