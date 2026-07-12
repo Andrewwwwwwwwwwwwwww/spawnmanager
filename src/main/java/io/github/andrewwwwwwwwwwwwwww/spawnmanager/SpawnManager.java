@@ -28,6 +28,7 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.decoration.painting.Painting;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -68,6 +69,11 @@ public class SpawnManager implements ModInitializer {
 
     private void notifyDecorationBlocked(Player player) {
         player.sendSystemMessage(Component.literal("You cannot alter decorations near the spawn point.")
+            .withStyle(ChatFormatting.RED));
+    }
+
+    private void notifyPlacementBlocked(Player player) {
+        player.sendSystemMessage(Component.literal("You cannot place blocks near the spawn point.")
             .withStyle(ChatFormatting.RED));
     }
 
@@ -264,7 +270,7 @@ public class SpawnManager implements ModInitializer {
         });
 
         // Block non-ops from opening container blocks (chests, barrels, hoppers, shulker
-        // boxes, furnaces, etc.) inside the protected zone.
+        // boxes, furnaces, etc.), using redstone, or PLACING blocks inside the protected zone.
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             BlockPos pos = hitResult.getBlockPos();
             if (isProtectedFromContainerAccess(player, world, pos.getX(), pos.getZ())) {
@@ -275,6 +281,18 @@ public class SpawnManager implements ModInitializer {
                 }
                 if (isRedstoneInteractive(world.getBlockState(pos))) {
                     notifyRedstoneBlocked(player);
+                    return InteractionResult.FAIL;
+                }
+            }
+            // Block placement: a placed block lands either on the clicked block (if it's
+            // replaceable, e.g. grass/water) or on the adjacent face, so refuse if either the
+            // clicked or the resulting position is inside the zone. Matches the break-protection
+            // radius so placement is now consistent everywhere in the zone (ops bypass).
+            if (player.getItemInHand(hand).getItem() instanceof BlockItem) {
+                BlockPos placePos = pos.relative(hitResult.getDirection());
+                if (isProtectedFromContainerAccess(player, world, pos.getX(), pos.getZ())
+                    || isProtectedFromContainerAccess(player, world, placePos.getX(), placePos.getZ())) {
+                    notifyPlacementBlocked(player);
                     return InteractionResult.FAIL;
                 }
             }

@@ -1,5 +1,15 @@
 # Spawn Manager Changelog
 
+## [2.3.2] - 2026-07-04
+
+### Fixed
+- **Block placement is now blocked throughout the whole spawn zone.** Non-op players could place
+  blocks in parts of spawn: the mod only ever blocked breaking (its circular radius), never placing,
+  so the only thing stopping placement was Minecraft's built-in `spawn-protection` (server.properties)
+  — a smaller square that left a ring where placing still worked. `UseBlockCallback` now also refuses
+  block-item placement for non-ops anywhere inside the protection radius (checking both the clicked
+  and the resulting position), matching the break protection. Ops still bypass.
+
 ## [2.3.1] - 2026-07-04
 
 ### Fixed
