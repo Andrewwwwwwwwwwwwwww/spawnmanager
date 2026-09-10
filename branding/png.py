@@ -22,7 +22,10 @@ def read(path):
         pos += 12 + length
         if tag == b'IHDR':
             width, height, depth, ctype, comp, filt, interlace = struct.unpack('>IIBBBBB', data)
-            assert depth == 8, 'only 8-bit channels supported, got %d' % depth
+            # Palette images are often packed at 1, 2 or 4 bits per pixel; everything else
+            # here is 8-bit channels.
+            assert depth in (1, 2, 4, 8), 'unsupported bit depth %d' % depth
+            assert depth == 8 or ctype == 3, 'sub-byte depth only supported for palettes'
             assert interlace == 0, 'interlaced PNG not supported'
         elif tag == b'PLTE':
             palette = [tuple(data[i:i + 3]) for i in range(0, len(data), 3)]
@@ -34,7 +37,7 @@ def read(path):
             break
 
     channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[ctype]
-    stride = width * channels
+    stride = (width * channels * depth + 7) // 8
     flat = zlib.decompress(bytes(idat))
     out = bytearray(stride * height)
     prev = bytearray(stride)
@@ -66,13 +69,27 @@ def read(path):
         out[y * stride:(y + 1) * stride] = line
         prev = line
 
+    def index_at(base, x):
+        """Palette index for pixel x, unpacking sub-byte depths."""
+        if depth == 8:
+            return out[base + x]
+        per = 8 // depth
+        byte = out[base + x // per]
+        shift = 8 - depth * (x % per + 1)
+        return (byte >> shift) & ((1 << depth) - 1)
+
     rows = []
     for y in range(height):
         row = []
         base = y * stride
         for x in range(width):
             i = base + x * channels
-            if ctype == 0:
+            if ctype == 3:
+                idx = index_at(base, x)
+                r, g, b = palette[idx]
+                a = trns[idx] if trns is not None and idx < len(trns) else 255
+                row.append((r, g, b, a))
+            elif ctype == 0:
                 v = out[i]
                 row.append((v, v, v, 255))
             elif ctype == 2:
