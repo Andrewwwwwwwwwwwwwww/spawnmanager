@@ -1,5 +1,12 @@
 # Spawn Manager Changelog
 
+## [2.4.0] - 2026-09-15
+
+### Added
+- **Minecraft 26.3 build.** Spawn Manager now ships a build for Minecraft 26.3 (Fabric Loader
+  0.19.3 -> 0.19.5, Fabric API 0.152.1+26.2 -> 0.160.5+26.3). No mod code changed for the port; the
+  26.2 and 26.1.2 builds carry on alongside it.
+
 ## [2.3.2] - 2026-07-04
 
 ### Fixed
