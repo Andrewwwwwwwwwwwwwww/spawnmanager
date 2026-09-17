@@ -1,5 +1,23 @@
 # Spawn Manager Changelog
 
+## [2.4.1] - 2026-09-17
+
+### Fixed
+- **A brand-new player's first join ignored the exact spawn and put them on the terrain surface.**
+  The mod forced the exact spawn from three places - `/spawn`, the death-respawn handler, and an
+  override of `ServerPlayer.adjustSpawnLocation` added in 2.4.0 for first joins. That last one never
+  ran: a first join is placed during the login configuration phase by `PrepareSpawnTask`, before a
+  `ServerPlayer` object exists at all, so nothing ever called the method it overrode. Placement fell
+  through to `PlayerSpawnFinder`, which ends in a `MOTION_BLOCKING_NO_LEAVES` heightmap lookup - the
+  terrain surface - and a spawn set underground or on a platform was discarded.
+  - The search itself is now given the exact position, so first join, respawn and `/spawn` all go to
+    the same block. It only engages while `respawnRadius` is 0, which is what `setexactspawn` sets;
+    give the world a respawn radius back and vanilla scattering returns.
+  - The 2.4.0 override is gone. It never fired for a first join, and on the respawn path it cancelled
+    before the search ran, which would have skipped the `respawnRadius` check above.
+  - Choosing the world spawn when a world is first created goes through a different entry point and
+    is untouched.
+
 ## [2.4.0] - 2026-09-15
 
 ### Added
